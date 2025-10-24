@@ -101,6 +101,9 @@ func registerReceive(app *extkingpin.App) {
 			HeadChunksWriteQueueSize:       int(conf.tsdbWriteQueueSize),
 			EnableMemorySnapshotOnShutdown: conf.tsdbMemorySnapshotOnShutdown,
 			EnableNativeHistograms:         conf.tsdbEnableNativeHistograms,
+			StripeSize:                     int(conf.tsdbStripeSize),
+			HeadChunksWriteBufferSize:      int(conf.tsdbWriteBufferSize),
+			WALSegmentSize:                 int(conf.tsdbWALSegmentSize),
 		}
 
 		// Are we running in IngestorOnly, RouterOnly or RouterIngestor mode?
@@ -903,6 +906,9 @@ type receiveConfig struct {
 	tsdbWriteQueueSize           int64
 	tsdbMemorySnapshotOnShutdown bool
 	tsdbEnableNativeHistograms   bool
+	tsdbStripeSize               int64
+	tsdbWriteBufferSize          int64
+	tsdbWALSegmentSize           int64
 
 	walCompression       bool
 	noLockFile           bool
@@ -1067,6 +1073,19 @@ func (rc *receiveConfig) registerFlag(cmd extkingpin.FlagClause) {
 	cmd.Flag("tsdb.enable-native-histograms",
 		"[EXPERIMENTAL] Enables the ingestion of native histograms.").
 		Default("false").BoolVar(&rc.tsdbEnableNativeHistograms)
+
+	cmd.Flag("tsdb.stripe-size",
+		"[EXPERIMENTAL] The size in entries of the series hash map. Reducing the size will save memory but impact performance.").
+		Default("0").Int64Var(&rc.tsdbStripeSize)
+	cmd.Flag("tsdb.wal-segment-size",
+		"[EXPERIMENTAL] Segment (wal files) max size."+
+			"WALSegmentSize = 0, segment size is default size."+
+			"WALSegmentSize > 0, segment size is WALSegmentSize."+
+			"WALSegmentSize < 0, wal is disabled.").
+		Default("0").Int64Var(&rc.tsdbWALSegmentSize)
+	cmd.Flag("tsdb.write-buffer-size",
+		"[EXPERIMENTAL] Enables configuring the write buffer size used by the head chunks mapper.").
+		Default("0").Int64Var(&rc.tsdbWriteBufferSize)
 
 	cmd.Flag("writer.intern",
 		"[EXPERIMENTAL] Enables string interning in receive writer, for more optimized memory usage.").
